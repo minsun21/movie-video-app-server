@@ -1,14 +1,12 @@
 package com.video.domain;
 
-import java.util.List;
-
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,16 +18,23 @@ import lombok.NoArgsConstructor;
 @Builder
 @Getter
 @Entity
-public class Member {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "member_id")
+public class Video {
+	@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	private String email;
-	private String password;
-	private String name;
-	private ROLE role;
+	
+	private String title;
+	
+	private String desc;
+	
+	private String path;
+	
+	private VIDEOAUTHORITY authority;
+	
+	private VIDEOCATEGORY category;
+	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "member_id")
+	private Member member;
+	
 
-	@OneToMany(fetch = FetchType.LAZY, mappedBy = "member")
-	private List<Video> video;
 }
