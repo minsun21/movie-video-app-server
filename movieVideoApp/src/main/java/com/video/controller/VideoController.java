@@ -34,6 +34,7 @@ public class VideoController {
 			InputStream fileStream = file.getInputStream();
 			FileUtils.copyInputStreamToFile(fileStream, targetFile);
 			result.put("path", targetFile.getName());
+			log.info("path: " + targetFile.getName());
 			result.put("result", "success");
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -42,23 +43,4 @@ public class VideoController {
 		}
 		return result;
 	}
-	
-//	@PostMapping("/upload")
-//	public Map<String, String> uploadVideo(@RequestParam("file") MultipartFile file) {
-//		Map<String, String> result = new HashMap<String, String>();
-//		File targetFile = new File(FILE_PATH + file.getOriginalFilename());
-//		try {
-//			InputStream fileStream = file.getInputStream();
-//			FileUtils.copyInputStreamToFile(fileStream, targetFile);
-//			result.put("path", targetFile.getName());
-//			log.info("path: " + targetFile.getName());
-//			result.put("result", "success");
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			FileUtils.deleteQuietly(targetFile);
-//			result.put("result", e.getMessage());
-//		}
-//		return result;
-//	}
-	
 }
