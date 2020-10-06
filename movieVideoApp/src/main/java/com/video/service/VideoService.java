@@ -1,22 +1,19 @@
 package com.video.service;
 
-import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
-import org.jcodec.api.FrameGrab;
-import org.jcodec.common.model.Picture;
-import org.jcodec.scale.AWTUtil;
+import org.apache.commons.io.IOUtils;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.FrameGrabber.Exception;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import com.video.domain.Video;
-import com.video.repository.MemberRepository;
 import com.video.repository.VideoRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -27,16 +24,39 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class VideoService {
 	private final VideoRepository videoRepository;
+	private final String FILE_PATH = "src/main/resources/static/videos/";
+	private final String THUMBNAIL_PATH = "src/main/resources/static/thumbnail/";
+	private final String JPGE = "jpg";
 
-	public void uploadVideo() {
+	public byte[] uploadVideo(MultipartFile file) throws IOException, Exception {
+		// 1. video 서버에 저장
+		File targetFile = new File(FILE_PATH + file.getOriginalFilename());
+		BufferedInputStream fileStream = new BufferedInputStream(file.getInputStream());
+		FileUtils.copyInputStreamToFile(fileStream, targetFile);
+
+		// 2. thumnail 이미지 추출
+		return getThumbnail(targetFile);
 	}
 
-//	public getThumbnail() {
-//		int frameNumber = 0;
-//	    
-//		  Picture picture = FrameGrab.getFrameFromFile(source, frameNumber);
-//		 
-//		  BufferedImage bufferedImage = AWTUtil.toBufferedImage(picture);
-//		  ImageIO.write(bufferedImage, IMAGE_PNG_FORMAT, thumbnail);
-//	}
+	public byte[] getThumbnail(File targetFile) throws Exception, IOException {
+		long frameTime = 5000;
+		FFmpegFrameGrabber video = new FFmpegFrameGrabber(targetFile);
+		video.start();
+		if (frameTime > 0) {
+			video.setTimestamp(frameTime * 1000l); // microseconds
+		}
+		String thumbnail = getRemoveExtension(targetFile.getName());
+		File thumnailFile = new File(THUMBNAIL_PATH + thumbnail + "." + JPGE);
+		ImageIO.write(video.grab().getBufferedImage(), JPGE, thumnailFile);
+		try(BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))){
+			return IOUtils.toByteArray(in);
+		}
+	}
+
+	// 확장자 제거
+	public String getRemoveExtension(String fileName) {
+		int idx = fileName.lastIndexOf(".");
+		String removeExtensionName = fileName.substring(0, idx);
+		return removeExtensionName;
+	}
 }

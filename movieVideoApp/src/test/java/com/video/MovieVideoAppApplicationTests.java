@@ -17,7 +17,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 class MovieVideoAppApplicationTests {
 	@Test
 	void contextLoads2() throws Exception, IOException, InterruptedException {
-		File outJpg = new File("d://out.jpg");
 		long frameTime = 5000;
 		FFmpegFrameGrabber video = new FFmpegFrameGrabber("d://A Thousand Miles.mp4");
 		video.start();

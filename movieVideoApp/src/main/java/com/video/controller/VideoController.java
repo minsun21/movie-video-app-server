@@ -1,15 +1,14 @@
 package com.video.controller;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
+import org.bytedeco.javacv.FrameGrabber.Exception;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,23 +23,23 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/video")
 public class VideoController {
 	private final VideoService videoService;
-	private final String FILE_PATH = "src/main/resources/static/videos/";
 
 	@PostMapping("/upload")
-	public Map<String, String> uploadVideo(@RequestParam("file") MultipartFile file) {
-		Map<String, String> result = new HashMap<String, String>();
-		File targetFile = new File(FILE_PATH + file.getOriginalFilename());
+	public @ResponseBody byte[] uploadVideo(@RequestParam("file") MultipartFile file) throws Exception {
+		Map<String, Object> result = new HashMap<String, Object>();
 		try {
-			InputStream fileStream = file.getInputStream();
-			FileUtils.copyInputStreamToFile(fileStream, targetFile);
-			result.put("path", targetFile.getName());
-			log.info("path: " + targetFile.getName());
-			result.put("result", "success");
+			// 1. 비디오를 서버에 저장
+			// 2. thumnail 이미지 추출 후 반환
+			byte[] thumbnail = videoService.uploadVideo(file);
+			return thumbnail;
+//			result.put("result", "success");
+//			result.put("thumbnail", thumbnail);
+//			log.info("Rmx");
 		} catch (IOException e) {
 			e.printStackTrace();
-			FileUtils.deleteQuietly(targetFile);
+//			FileUtils.deleteQuietly(targetFile);
 			result.put("result", e.getMessage());
 		}
-		return result;
+		return null;
 	}
 }
