@@ -57,7 +57,7 @@ public class VideoController {
 //		}
 //		return null;
 //	}
-	
+//	
 	@PostMapping("/upload")
 	public @ResponseBody Map<String, Object> uploadVideo(@RequestParam("file") MultipartFile file) throws Exception {
 		try {

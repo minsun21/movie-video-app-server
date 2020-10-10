@@ -12,6 +12,7 @@ import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FrameGrabber.Exception;
 import org.springframework.stereotype.Service;
@@ -74,37 +75,21 @@ public class VideoService {
 		Map<String, Object> result = new HashMap<String, Object>();
 		String randomUid = UUID.randomUUID().toString();
 		String uid = getUidName(randomUid, file.getOriginalFilename());
-		log.info("uid : " + uid);
+
 		File targetFile = new File(FILE_PATH + uid);
 		BufferedInputStream fileStream = new BufferedInputStream(file.getInputStream());
 		FileUtils.copyInputStreamToFile(fileStream, targetFile);
 
 		// 2. thumnail 이미지 추출
-		byte[] bytes = getThumbnail(targetFile, randomUid);
-		
+		String bytes = getThumbnail(targetFile, randomUid);
+
 		result.put("result", "success");
 		result.put("uid", uid);
 		result.put("bytes", bytes);
 		return result;
 	}
 
-	public String getUidName(String randomUid, String fileName) {
-		String ext = ExtensionUtil.getExtension(fileName);
-		return randomUid + "." + ext;
-	}
-
-//	public byte[] uploadVideo(MultipartFile file) throws IOException, Exception {
-//		// 1. video 서버에 저장
-//		UUID uid = UUID.randomUUID();
-//		File targetFile = new File(FILE_PATH + uid);
-//		BufferedInputStream fileStream = new BufferedInputStream(file.getInputStream());
-//		FileUtils.copyInputStreamToFile(fileStream, targetFile);
-//
-//		// 2. thumnail 이미지 추출
-//		return getThumbnail(targetFile);
-//	}
-
-	public byte[] getThumbnail(File targetFile, String uid) throws Exception, IOException {
+	public String getThumbnail(File targetFile, String uid) throws Exception, IOException {
 		long frameTime = 5000;
 		FFmpegFrameGrabber video = new FFmpegFrameGrabber(targetFile);
 		video.start();
@@ -114,7 +99,12 @@ public class VideoService {
 		File thumnailFile = new File(THUMBNAIL_PATH + uid + "." + JPGE);
 		ImageIO.write(video.grab().getBufferedImage(), JPGE, thumnailFile);
 		try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))) {
-			return IOUtils.toByteArray(in);
+			return Base64.encodeBase64String(IOUtils.toByteArray(in));
 		}
+	}
+
+	public String getUidName(String randomUid, String fileName) {
+		String ext = ExtensionUtil.getExtension(fileName);
+		return randomUid + "." + ext;
 	}
 }
