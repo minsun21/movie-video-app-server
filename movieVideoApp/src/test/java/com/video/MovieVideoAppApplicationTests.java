@@ -5,10 +5,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import org.bytedeco.javacpp.avcodec;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.FFmpegFrameRecorder;
-import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber.Exception;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,5 +22,9 @@ class MovieVideoAppApplicationTests {
 		}
 		ImageIO.write(video.grab().getBufferedImage(), "png",
 				new File("d://A Thousand Miles-" + System.currentTimeMillis() + ".png"));
+	}
+	
+	@Test
+	void enumTest() {
 	}
 }
