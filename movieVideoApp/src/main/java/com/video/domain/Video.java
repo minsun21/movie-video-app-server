@@ -1,5 +1,7 @@
 package com.video.domain;
 
+import java.time.LocalDate;
+
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -36,5 +38,8 @@ public class Video {
 	@JoinColumn(name = "member_id")
 	private Member member;
 	
+	private String viewCount;
+	
+	private LocalDate uploadDate;
 
 }
