@@ -28,7 +28,7 @@ public class Video {
 	
 	private String desc;
 	
-	private String path;
+	private String videoPath;
 	
 	private VIDEOAUTHORITY authority;
 	
@@ -41,5 +41,7 @@ public class Video {
 	private String viewCount;
 	
 	private LocalDate uploadDate;
+	
+	private String thumbnailPath;
 
 }

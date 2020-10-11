@@ -4,9 +4,12 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 
@@ -26,6 +29,8 @@ import com.video.repository.MemberRepository;
 import com.video.repository.VideoRepository;
 import com.video.util.ExtensionUtil;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,10 +40,16 @@ import lombok.extern.slf4j.Slf4j;
 public class VideoService {
 	private final VideoRepository videoRepository;
 	private final MemberRepository memberRepository;
-	
+
 	private final String FILE_PATH = "src/main/resources/static/videos/";
 	private final String THUMBNAIL_PATH = "src/main/resources/static/thumbnail/";
 	private final String JPGE = "jpg";
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public Result getAllVideo() {
+		List<VideoDTO> list = videoRepository.findAll().stream().map(VideoDTO::new).collect(Collectors.toList());
+		return new Result(list, "success");
+	}
 
 	public void submitVideo(Map<String, String> submitInfo) throws Exception {
 		try {
@@ -46,14 +57,20 @@ public class VideoService {
 			String title = submitInfo.get("title");
 			if (videoRepository.findByTitle(title) != null)
 				throw new Exception("title 이름이 중복됩니다");
-			
+
+			// 2. login info
 			Member member = memberRepository.findByEmail(submitInfo.get("user"));
+
+			String videoPath = submitInfo.get("path");
+			// 3. thumbnail
+			String thumbnail = ExtensionUtil.getRemoveExtension(videoPath) + "." + JPGE;
 
 			// 2. DB에 저장
 			VIDEOAUTHORITY auth = (submitInfo.get("auth").equals("0")) ? VIDEOAUTHORITY.PRIVATE : VIDEOAUTHORITY.PUBLIC;
 			VIDEOCATEGORY category = getCategory(submitInfo.get("category"));
-			Video video = Video.builder().path(submitInfo.get("path")).title(title).desc(submitInfo.get("desc"))
-					.authority(auth).category(category).member(member).build();
+			Video video = Video.builder().videoPath(videoPath).title(title).desc(submitInfo.get("desc")).authority(auth)
+					.category(category).member(member).thumbnailPath(thumbnail).uploadDate(LocalDate.now())
+					.viewCount("0").build();
 			videoRepository.save(video);
 		} catch (Exception e) {
 			throw new Exception(e.getMessage());
@@ -100,7 +117,7 @@ public class VideoService {
 		FFmpegFrameGrabber video = new FFmpegFrameGrabber(targetFile);
 		video.start();
 		video.setTimestamp(frameTime * 1000l);
-		
+
 		// 2분 16초
 		File thumnailFile = new File(THUMBNAIL_PATH + uid + "." + JPGE);
 		ImageIO.write(video.grab().getBufferedImage(), JPGE, thumnailFile);
@@ -113,4 +130,60 @@ public class VideoService {
 		String ext = ExtensionUtil.getExtension(fileName);
 		return randomUid + "." + ext;
 	}
+
+	@SuppressWarnings("unused")
+	@AllArgsConstructor
+	public class Result<T> {
+		private T data;
+		private String result;
+
+	}
+
+	@Data
+	class VideoDTO {
+		private String title;
+
+		private String desc;
+
+		private String path;
+
+		private VIDEOAUTHORITY authority;
+
+		private VIDEOCATEGORY category;
+
+		private String member;
+
+		private String viewCount;
+
+		private LocalDate uploadDate;
+
+		private String thumbnail;
+
+		public VideoDTO(Video video) {
+			this.title = video.getTitle();
+			this.desc = video.getDesc();
+			this.path = video.getVideoPath();
+			this.authority = video.getAuthority();
+			this.category = video.getCategory();
+			this.member = video.getMember().getName();
+			this.viewCount = video.getViewCount();
+			this.uploadDate = video.getUploadDate();
+			this.thumbnail = getImage(video.getThumbnailPath());
+		}
+
+		private String getImage(String thumbnailPath) {
+			File thumnailFile = new File(THUMBNAIL_PATH + thumbnailPath);
+			try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))) {
+				try {
+					return Base64.encodeBase64String(IOUtils.toByteArray(in));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return thumbnailPath;
+		}
+	}
+
 }
