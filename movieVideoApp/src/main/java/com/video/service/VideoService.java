@@ -46,9 +46,9 @@ public class VideoService {
 	private final String JPGE = "jpg";
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public Result getAllVideo() {
+	public List<VideoDTO> getAllVideo() {
 		List<VideoDTO> list = videoRepository.findAll().stream().map(VideoDTO::new).collect(Collectors.toList());
-		return new Result(list, "success");
+		return list;
 	}
 
 	public void submitVideo(Map<String, String> submitInfo) throws Exception {
@@ -140,7 +140,9 @@ public class VideoService {
 	}
 
 	@Data
-	class VideoDTO {
+	public class VideoDTO {
+		private Long id;
+		
 		private String title;
 
 		private String desc;
@@ -160,12 +162,16 @@ public class VideoService {
 		private String thumbnail;
 
 		public VideoDTO(Video video) {
+			this.id = video.getId();
 			this.title = video.getTitle();
 			this.desc = video.getDesc();
 			this.path = video.getVideoPath();
 			this.authority = video.getAuthority();
 			this.category = video.getCategory();
-			this.member = video.getMember().getName();
+			if(video.getMember() != null)
+				this.member = video.getMember().getName();
+			else
+				this.member="test@test.com";
 			this.viewCount = video.getViewCount();
 			this.uploadDate = video.getUploadDate();
 			this.thumbnail = getImage(video.getThumbnailPath());

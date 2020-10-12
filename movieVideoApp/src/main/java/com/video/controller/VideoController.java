@@ -2,6 +2,7 @@ package com.video.controller;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.bytedeco.javacv.FrameGrabber.Exception;
@@ -14,9 +15,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.video.repository.VideoRepository;
 import com.video.service.VideoService;
-import com.video.service.VideoService.Result;
+import com.video.service.VideoService.VideoDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +27,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/video")
 public class VideoController {
 	private final VideoService videoService;
-
+	@ResponseBody
 	@SuppressWarnings({ "rawtypes" })
 	@GetMapping("/all")
-	public Result getAllVideo() {
-		Result list = videoService.getAllVideo();
+	public List<VideoDTO> getAllVideo() {
+		List<VideoDTO> list = videoService.getAllVideo();
 		return list;
 	}
 
