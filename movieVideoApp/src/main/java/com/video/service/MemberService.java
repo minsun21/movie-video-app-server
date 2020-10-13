@@ -1,15 +1,26 @@
 package com.video.service;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.transaction.Transactional;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.video.domain.Member;
 import com.video.domain.ROLE;
 import com.video.repository.MemberRepository;
+import com.video.util.Constants;
+import com.video.util.ExtensionUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,12 +38,21 @@ public class MemberService {
 			duplicateInfo(email);
 			String password = (String) registerInfo.get("password");
 			String name = (String) registerInfo.get("name");
-			Member member = Member.builder().email(email).password(password).name(name).role(ROLE.USER).build();
+			String imagePath = getAvatarImage(registerInfo);
+			Member member = Member.builder().email(email).password(password).name(name).role(ROLE.USER)
+					.imagePath(imagePath).build();
 			memberRepository.save(member);
 		} catch (Exception e) {
 			return e.getMessage();
 		}
 		return "success";
+	}
+
+	public String getAvatarImage(Map<String, Object> registerInfo) {
+		String imagePath = (String) registerInfo.get("image");
+		if (imagePath == null)
+			imagePath = Constants.BASE_MEMBER_IMAGE_PATH;
+		return imagePath;
 	}
 
 	public Map<String, String> loginMember(Map<String, Object> loginInfo) {
@@ -45,15 +65,34 @@ public class MemberService {
 				if (findMember.getPassword().equals(passsword)) {
 					result.put("email", email);
 					result.put("loginSuccess", "success");
-				}else {
+				} else {
 					result.put("loginSuccess", "비밀번호가 맞지 않습니다");
 				}
-			}else {
+			} else {
 				result.put("loginSuccess", "해당 회원이 존재하지 않습니다");
 			}
 		} catch (Exception e) {
-			log.info(">>>>>>>>>>여기");
 			result.put("loginSuccess", e.getMessage());
+		}
+		return result;
+	}
+
+	public Map<String, Object> uploadImage(MultipartFile image) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		String randomUid = UUID.randomUUID().toString();
+		String uid = ExtensionUtil.getUidName(randomUid, image.getOriginalFilename());
+		File targetFile = new File(Constants.MEMBER_IMAGE_PATH + uid);
+		try (BufferedInputStream fileStream = new BufferedInputStream(image.getInputStream())) {
+			FileUtils.copyInputStreamToFile(fileStream, targetFile);
+			try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(targetFile))) {
+				String bytes = Base64.encodeBase64String(IOUtils.toByteArray(in));
+				System.out.println("bytes: " + bytes);
+				result.put("bytes", bytes);
+			}
+			result.put("result", "success");
+			result.put("uid", uid);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		return result;
 	}

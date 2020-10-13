@@ -32,4 +32,6 @@ public class Member {
 
 	@OneToMany(fetch = FetchType.LAZY, mappedBy = "member")
 	private List<Video> video;
+	
+	private String imagePath;
 }

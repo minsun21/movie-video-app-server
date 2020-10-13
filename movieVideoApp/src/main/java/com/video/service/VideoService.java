@@ -27,6 +27,7 @@ import com.video.domain.VIDEOCATEGORY;
 import com.video.domain.Video;
 import com.video.repository.MemberRepository;
 import com.video.repository.VideoRepository;
+import com.video.util.Constants;
 import com.video.util.ExtensionUtil;
 
 import lombok.AllArgsConstructor;
@@ -41,13 +42,12 @@ public class VideoService {
 	private final VideoRepository videoRepository;
 	private final MemberRepository memberRepository;
 
-	private final String FILE_PATH = "src/main/resources/static/videos/";
-	private final String THUMBNAIL_PATH = "src/main/resources/static/thumbnail/";
-	private final String JPGE = "jpg";
-
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public List<VideoDTO> getAllVideo() {
 		List<VideoDTO> list = videoRepository.findAll().stream().map(VideoDTO::new).collect(Collectors.toList());
+		for (VideoDTO videoDTO : list) {
+			log.info(videoDTO.toString());
+		}
 		return list;
 	}
 
@@ -63,7 +63,7 @@ public class VideoService {
 
 			String videoPath = submitInfo.get("path");
 			// 3. thumbnail
-			String thumbnail = ExtensionUtil.getRemoveExtension(videoPath) + "." + JPGE;
+			String thumbnail = ExtensionUtil.getRemoveExtension(videoPath) + "." + Constants.JPGE;
 
 			// 2. DB에 저장
 			VIDEOAUTHORITY auth = (submitInfo.get("auth").equals("0")) ? VIDEOAUTHORITY.PRIVATE : VIDEOAUTHORITY.PUBLIC;
@@ -97,18 +97,19 @@ public class VideoService {
 		// 1. video 서버에 저장
 		Map<String, Object> result = new HashMap<String, Object>();
 		String randomUid = UUID.randomUUID().toString();
-		String uid = getUidName(randomUid, file.getOriginalFilename());
+		String uid = ExtensionUtil.getUidName(randomUid, file.getOriginalFilename());
 
-		File targetFile = new File(FILE_PATH + uid);
-		BufferedInputStream fileStream = new BufferedInputStream(file.getInputStream());
-		FileUtils.copyInputStreamToFile(fileStream, targetFile);
+		File targetFile = new File(Constants.FILE_PATH + uid);
+		try (BufferedInputStream fileStream = new BufferedInputStream(file.getInputStream())) {
+			FileUtils.copyInputStreamToFile(fileStream, targetFile);
 
-		// 2. thumnail 이미지 추출
-		String bytes = getThumbnail(targetFile, randomUid);
+			// 2. thumnail 이미지 추출
+			String bytes = getThumbnail(targetFile, randomUid);
 
-		result.put("result", "success");
-		result.put("uid", uid);
-		result.put("bytes", bytes);
+			result.put("result", "success");
+			result.put("uid", uid);
+			result.put("bytes", bytes);
+		}
 		return result;
 	}
 
@@ -119,16 +120,11 @@ public class VideoService {
 		video.setTimestamp(frameTime * 1000l);
 
 		// 2분 16초
-		File thumnailFile = new File(THUMBNAIL_PATH + uid + "." + JPGE);
-		ImageIO.write(video.grab().getBufferedImage(), JPGE, thumnailFile);
+		File thumnailFile = new File(Constants.THUMBNAIL_PATH + uid + "." + Constants.JPGE);
+		ImageIO.write(video.grab().getBufferedImage(), Constants.JPGE, thumnailFile);
 		try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))) {
 			return Base64.encodeBase64String(IOUtils.toByteArray(in));
 		}
-	}
-
-	public String getUidName(String randomUid, String fileName) {
-		String ext = ExtensionUtil.getExtension(fileName);
-		return randomUid + "." + ext;
 	}
 
 	@SuppressWarnings("unused")
@@ -142,7 +138,7 @@ public class VideoService {
 	@Data
 	public class VideoDTO {
 		private Long id;
-		
+
 		private String title;
 
 		private String desc;
@@ -153,7 +149,9 @@ public class VideoService {
 
 		private VIDEOCATEGORY category;
 
-		private String member;
+		private String memberName;
+		
+		private String memberImage;
 
 		private String viewCount;
 
@@ -168,28 +166,29 @@ public class VideoService {
 			this.path = video.getVideoPath();
 			this.authority = video.getAuthority();
 			this.category = video.getCategory();
-			if(video.getMember() != null)
-				this.member = video.getMember().getName();
-			else
-				this.member="test@test.com";
+			this.memberName = video.getMember().getName();
+			
 			this.viewCount = video.getViewCount();
 			this.uploadDate = video.getUploadDate();
-			this.thumbnail = getImage(video.getThumbnailPath());
-		}
-
-		private String getImage(String thumbnailPath) {
-			File thumnailFile = new File(THUMBNAIL_PATH + thumbnailPath);
-			try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))) {
-				try {
-					return Base64.encodeBase64String(IOUtils.toByteArray(in));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			try {
+				this.memberImage = getImage(video.getMember().getImagePath(),false);
+				this.thumbnail = getImage(video.getThumbnailPath(),true);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			return thumbnailPath;
+			System.out.println("/");
+		}
+
+		private String getImage(String thumbnailPath, boolean isThumbnail) throws IOException {
+			String path = "";
+			if(isThumbnail)
+				path = Constants.THUMBNAIL_PATH;
+			else
+				path = Constants.MEMBER_IMAGE_PATH;
+			File thumnailFile = new File(path + thumbnailPath);
+			try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))) {
+				return Base64.encodeBase64String(IOUtils.toByteArray(in));
+			}
 		}
 	}
-
 }

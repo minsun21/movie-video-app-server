@@ -14,4 +14,9 @@ public class ExtensionUtil {
 		String extension = fileName.substring(index + 1);
 		return extension;
 	}
+	
+	public static String getUidName(String randomUid, String fileName) {
+		String ext = getExtension(fileName);
+		return randomUid + "." + ext;
+	}
 }
