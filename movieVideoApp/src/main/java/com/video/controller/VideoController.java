@@ -1,6 +1,7 @@
 package com.video.controller;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/video")
 public class VideoController {
 	private final VideoService videoService;
+	
 	@ResponseBody
 	@SuppressWarnings({ "rawtypes" })
 	@GetMapping("/all")
@@ -58,5 +60,31 @@ public class VideoController {
 			e.printStackTrace();
 		}
 		return null;
+	}
+	@PostMapping("/getVideo")
+	public @ResponseBody VideoDTO getDetailVideo(@RequestBody Map<String, String> videoId) {
+		String id = videoId.get("videoId");
+		System.out.println(id);
+		VideoDTO video = videoService.getDetailVideo(Long.valueOf(id));
+		return video;
+	}
+	
+	@GetMapping("/side-all")
+	public List<VideoDTO> getSideViewVideos(@RequestBody Map<String, String> videoInfo) {
+		// 현재 디테일 페이지 비디오 제외
+		String id = videoInfo.get("id");
+		List<VideoDTO> list = videoService.getAllVideo();
+		List<VideoDTO> result = new ArrayList<VideoDTO>();
+		int cnt = 0;
+		// 5개만 리턴 하기
+		for (VideoDTO videoDTO : list) {
+			if(cnt == 5)
+				break;
+			if(!String.valueOf(videoDTO.getId()).equals(id)) {
+				result.add(videoDTO);
+				cnt++;
+			}
+		}
+		return result;
 	}
 }

@@ -99,7 +99,7 @@ public class VideoService {
 		String randomUid = UUID.randomUUID().toString();
 		String uid = ExtensionUtil.getUidName(randomUid, file.getOriginalFilename());
 
-		File targetFile = new File(Constants.FILE_PATH + uid);
+		File targetFile = new File(Constants.VIDEO_FILE_PATH + uid);
 		try (BufferedInputStream fileStream = new BufferedInputStream(file.getInputStream())) {
 			FileUtils.copyInputStreamToFile(fileStream, targetFile);
 
@@ -143,14 +143,14 @@ public class VideoService {
 
 		private String desc;
 
-		private String path;
+		private String videoFilePath;
 
 		private VIDEOAUTHORITY authority;
 
 		private VIDEOCATEGORY category;
 
 		private String memberName;
-		
+
 		private String memberImage;
 
 		private String viewCount;
@@ -159,36 +159,68 @@ public class VideoService {
 
 		private String thumbnail;
 
+		
 		public VideoDTO(Video video) {
 			this.id = video.getId();
 			this.title = video.getTitle();
 			this.desc = video.getDesc();
-			this.path = video.getVideoPath();
+			this.videoFilePath = video.getVideoPath();
 			this.authority = video.getAuthority();
 			this.category = video.getCategory();
 			this.memberName = video.getMember().getName();
-			
+			this.viewCount = video.getViewCount();
+			this.uploadDate = video.getUploadDate();
+			try {
+				this.memberImage = getImage(video.getMember().getImagePath(), false);
+				this.thumbnail = getImage(video.getThumbnailPath(), true);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		public VideoDTO(Video video, boolean detail) {
+			this.id = video.getId();
+			this.title = video.getTitle();
+			this.desc = video.getDesc();
+			this.authority = video.getAuthority();
+			this.category = video.getCategory();
+			this.memberName = video.getMember().getName();
 			this.viewCount = video.getViewCount();
 			this.uploadDate = video.getUploadDate();
 			try {
 				this.memberImage = getImage(video.getMember().getImagePath(),false);
 				this.thumbnail = getImage(video.getThumbnailPath(),true);
+				// video 객체도 전달 해야 함
+				
+				this.videoFilePath = getVideoFile(video.getVideoPath());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			System.out.println("/");
 		}
+	}
+	private String getVideoFile(String videoPath) throws IOException {
+		// 1) 파일을 가져와서
+		// 2) 바이트화 시켜서 전달
+		File videoFile = new File(Constants.VIDEO_FILE_PATH+videoPath);
+		try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(videoFile))) {
+			return Base64.encodeBase64String(IOUtils.toByteArray(in));
+		}
+	}
+	private String getImage(String thumbnailPath, boolean isThumbnail) throws IOException {
+		String path = "";
+		if (isThumbnail)
+			path = Constants.THUMBNAIL_PATH;
+		else
+			path = Constants.MEMBER_IMAGE_PATH;
+		File thumnailFile = new File(path + thumbnailPath);
+		try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))) {
+			return Base64.encodeBase64String(IOUtils.toByteArray(in));
+		}
+	}
 
-		private String getImage(String thumbnailPath, boolean isThumbnail) throws IOException {
-			String path = "";
-			if(isThumbnail)
-				path = Constants.THUMBNAIL_PATH;
-			else
-				path = Constants.MEMBER_IMAGE_PATH;
-			File thumnailFile = new File(path + thumbnailPath);
-			try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))) {
-				return Base64.encodeBase64String(IOUtils.toByteArray(in));
-			}
-		}
+
+	public VideoDTO getDetailVideo(Long id) {
+		Video video = videoRepository.findById(id).get();
+		VideoDTO videoDto = new VideoDTO(video,true);
+		return videoDto;
 	}
 }
