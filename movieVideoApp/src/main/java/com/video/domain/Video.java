@@ -43,5 +43,10 @@ public class Video {
 	private LocalDate uploadDate;
 	
 	private String thumbnailPath;
+	
+	public void addViewCount() {
+		int count = Integer.parseInt(viewCount) + 1;
+		this.viewCount = String.valueOf(count);
+	}
 
 }

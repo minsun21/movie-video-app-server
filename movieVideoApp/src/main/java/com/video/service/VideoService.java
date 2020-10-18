@@ -51,8 +51,12 @@ public class VideoService {
 		return list;
 	}
 
-	public void submitVideo(Map<String, String> submitInfo) throws Exception {
-		try {
+	public void submitVideo(Map<String, String> submitInfo) throws Exception, IOException {
+		String videoPath = submitInfo.get("path");
+
+		File tempVideo = new File(Constants.TEMPORIARY_PATH + videoPath);
+		
+		try (BufferedInputStream fileStream = new BufferedInputStream(new FileInputStream(tempVideo))) {
 			// 1. 동일 이름인지 확인
 			String title = submitInfo.get("title");
 			if (videoRepository.findByTitle(title) != null)
@@ -61,19 +65,32 @@ public class VideoService {
 			// 2. login info
 			Member member = memberRepository.findByEmail(submitInfo.get("user"));
 
-			String videoPath = submitInfo.get("path");
-			// 3. thumbnail
-			String thumbnail = ExtensionUtil.getRemoveExtension(videoPath) + "." + Constants.JPGE;
+			// 3. video path 이동
+			File videoFilePath = new File(Constants.VIDEO_FILE_PATH + videoPath);
+			FileUtils.copyInputStreamToFile(fileStream, videoFilePath);
 
-			// 2. DB에 저장
+			// 4. thumbnail 이동
+			String thumbnail = ExtensionUtil.getRemoveExtension(videoPath) + "." + Constants.JPGE;
+			File tempThumbnail = new File(Constants.TEMPORIARY_PATH+thumbnail);
+			File videoThumbnail = new File(Constants.THUMBNAIL_PATH + thumbnail);
+			try (BufferedInputStream memberFileStream = new BufferedInputStream(new FileInputStream(tempThumbnail))) {
+				FileUtils.copyInputStreamToFile(memberFileStream, videoThumbnail);
+			}
+			
+			// 5. DB에 저장
 			VIDEOAUTHORITY auth = (submitInfo.get("auth").equals("0")) ? VIDEOAUTHORITY.PRIVATE : VIDEOAUTHORITY.PUBLIC;
 			VIDEOCATEGORY category = getCategory(submitInfo.get("category"));
 			Video video = Video.builder().videoPath(videoPath).title(title).desc(submitInfo.get("desc")).authority(auth)
 					.category(category).member(member).thumbnailPath(thumbnail).uploadDate(LocalDate.now())
 					.viewCount("0").build();
 			videoRepository.save(video);
+
+			// temp 파일들 삭제
+			tempThumbnail.delete();
 		} catch (Exception e) {
 			throw new Exception(e.getMessage());
+		}finally {
+			tempVideo.delete();
 		}
 	}
 
@@ -99,7 +116,7 @@ public class VideoService {
 		String randomUid = UUID.randomUUID().toString();
 		String uid = ExtensionUtil.getUidName(randomUid, file.getOriginalFilename());
 
-		File targetFile = new File(Constants.VIDEO_FILE_PATH + uid);
+		File targetFile = new File(Constants.TEMPORIARY_PATH + uid);
 		try (BufferedInputStream fileStream = new BufferedInputStream(file.getInputStream())) {
 			FileUtils.copyInputStreamToFile(fileStream, targetFile);
 
@@ -120,7 +137,7 @@ public class VideoService {
 		video.setTimestamp(frameTime * 1000l);
 
 		// 2분 16초
-		File thumnailFile = new File(Constants.THUMBNAIL_PATH + uid + "." + Constants.JPGE);
+		File thumnailFile = new File(Constants.TEMPORIARY_PATH + uid + "." + Constants.JPGE);
 		ImageIO.write(video.grab().getBufferedImage(), Constants.JPGE, thumnailFile);
 		try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(thumnailFile))) {
 			return Base64.encodeBase64String(IOUtils.toByteArray(in));
@@ -158,8 +175,9 @@ public class VideoService {
 		private LocalDate uploadDate;
 
 		private String thumbnail;
-
 		
+		private Long memberId;
+
 		public VideoDTO(Video video) {
 			this.id = video.getId();
 			this.title = video.getTitle();
@@ -168,6 +186,7 @@ public class VideoService {
 			this.authority = video.getAuthority();
 			this.category = video.getCategory();
 			this.memberName = video.getMember().getName();
+			this.memberId = video.getMember().getId();
 			this.viewCount = video.getViewCount();
 			this.uploadDate = video.getUploadDate();
 			try {
@@ -177,6 +196,7 @@ public class VideoService {
 				e.printStackTrace();
 			}
 		}
+
 		public VideoDTO(Video video, boolean detail) {
 			this.id = video.getId();
 			this.title = video.getTitle();
@@ -184,27 +204,30 @@ public class VideoService {
 			this.authority = video.getAuthority();
 			this.category = video.getCategory();
 			this.memberName = video.getMember().getName();
+			this.memberId = video.getMember().getId();
 			this.viewCount = video.getViewCount();
 			this.uploadDate = video.getUploadDate();
 			try {
-				this.memberImage = getImage(video.getMember().getImagePath(),false);
-				this.thumbnail = getImage(video.getThumbnailPath(),true);
+				this.memberImage = getImage(video.getMember().getImagePath(), false);
+				this.thumbnail = getImage(video.getThumbnailPath(), true);
 				// video 객체도 전달 해야 함
-				
+
 				this.videoFilePath = getVideoFile(video.getVideoPath());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}
+
 	private String getVideoFile(String videoPath) throws IOException {
 		// 1) 파일을 가져와서
 		// 2) 바이트화 시켜서 전달
-		File videoFile = new File(Constants.VIDEO_FILE_PATH+videoPath);
+		File videoFile = new File(Constants.VIDEO_FILE_PATH + videoPath);
 		try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(videoFile))) {
 			return Base64.encodeBase64String(IOUtils.toByteArray(in));
 		}
 	}
+
 	private String getImage(String thumbnailPath, boolean isThumbnail) throws IOException {
 		String path = "";
 		if (isThumbnail)
@@ -217,10 +240,16 @@ public class VideoService {
 		}
 	}
 
-
 	public VideoDTO getDetailVideo(Long id) {
 		Video video = videoRepository.findById(id).get();
-		VideoDTO videoDto = new VideoDTO(video,true);
+		addViewCount(video);
+		VideoDTO videoDto = new VideoDTO(video, true);
 		return videoDto;
+	}
+
+	public Video addViewCount(Video video) {
+		video.addViewCount();
+		videoRepository.save(video);
+		return video;
 	}
 }

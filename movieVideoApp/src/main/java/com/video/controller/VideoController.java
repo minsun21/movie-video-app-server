@@ -38,7 +38,7 @@ public class VideoController {
 	}
 
 	@PostMapping("/submit")
-	public Map<String, Object> submitVideo(@RequestBody Map<String, String> submitInfo) throws Exception {
+	public Map<String, Object> submitVideo(@RequestBody Map<String, String> submitInfo) throws Exception, IOException {
 		Map<String, Object> result = new HashMap<String, Object>();
 		for (String key : submitInfo.keySet()) {
 			log.info("key : " + key);
@@ -64,21 +64,20 @@ public class VideoController {
 	@PostMapping("/getVideo")
 	public @ResponseBody VideoDTO getDetailVideo(@RequestBody Map<String, String> videoId) {
 		String id = videoId.get("videoId");
-		System.out.println(id);
 		VideoDTO video = videoService.getDetailVideo(Long.valueOf(id));
 		return video;
 	}
 	
-	@GetMapping("/side-all")
+	@PostMapping("/getSideVideos")
 	public List<VideoDTO> getSideViewVideos(@RequestBody Map<String, String> videoInfo) {
 		// 현재 디테일 페이지 비디오 제외
-		String id = videoInfo.get("id");
+		String id = videoInfo.get("videoId");
 		List<VideoDTO> list = videoService.getAllVideo();
 		List<VideoDTO> result = new ArrayList<VideoDTO>();
 		int cnt = 0;
-		// 5개만 리턴 하기
+		// 4개만 리턴 하기
 		for (VideoDTO videoDTO : list) {
-			if(cnt == 5)
+			if(cnt == 4)
 				break;
 			if(!String.valueOf(videoDTO.getId()).equals(id)) {
 				result.add(videoDTO);

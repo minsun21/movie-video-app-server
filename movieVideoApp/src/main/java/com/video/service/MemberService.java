@@ -34,25 +34,31 @@ public class MemberService {
 	@Transactional
 	public String registerMember(Map<String, Object> registerInfo) {
 		String email = (String) registerInfo.get("email");
-		try {
+		String image = (String) registerInfo.get("image");
+		String imagePath = getAvatarImage(image);
+		File imageFile = new File(imagePath);
+		try (BufferedInputStream fileStream = new BufferedInputStream(new FileInputStream(imageFile))) {
 			duplicateInfo(email);
 			String password = (String) registerInfo.get("password");
 			String name = (String) registerInfo.get("name");
-			String imagePath = getAvatarImage(registerInfo);
+			FileUtils.copyInputStreamToFile(fileStream, new File(Constants.MEMBER_IMAGE_PATH + imagePath));
 			Member member = Member.builder().email(email).password(password).name(name).role(ROLE.USER)
 					.imagePath(imagePath).build();
 			memberRepository.save(member);
+
 		} catch (Exception e) {
 			return e.getMessage();
+		} finally {
+			if (image != null)
+				imageFile.delete();
 		}
 		return "success";
 	}
 
-	public String getAvatarImage(Map<String, Object> registerInfo) {
-		String imagePath = (String) registerInfo.get("image");
+	public String getAvatarImage(String imagePath) {
 		if (imagePath == null)
-			imagePath = Constants.BASE_MEMBER_IMAGE_PATH;
-		return imagePath;
+			return Constants.BASE_MEMBER_IMAGE_PATH;
+		return Constants.TEMPORIARY_PATH + imagePath;
 	}
 
 	public Map<String, String> loginMember(Map<String, Object> loginInfo) {
@@ -64,6 +70,7 @@ public class MemberService {
 				String passsword = (String) loginInfo.get("password");
 				if (findMember.getPassword().equals(passsword)) {
 					result.put("email", email);
+					result.put("id", String.valueOf(findMember.getId()));
 					result.put("loginSuccess", "success");
 				} else {
 					result.put("loginSuccess", "비밀번호가 맞지 않습니다");
@@ -81,7 +88,7 @@ public class MemberService {
 		Map<String, Object> result = new HashMap<String, Object>();
 		String randomUid = UUID.randomUUID().toString();
 		String uid = ExtensionUtil.getUidName(randomUid, image.getOriginalFilename());
-		File targetFile = new File(Constants.MEMBER_IMAGE_PATH + uid);
+		File targetFile = new File(Constants.TEMPORIARY_PATH + uid);
 		try (BufferedInputStream fileStream = new BufferedInputStream(image.getInputStream())) {
 			FileUtils.copyInputStreamToFile(fileStream, targetFile);
 			try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(targetFile))) {
