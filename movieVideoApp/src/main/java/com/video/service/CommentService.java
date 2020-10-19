@@ -12,7 +12,6 @@ import com.video.domain.Video;
 import com.video.repository.CommentRepository;
 import com.video.repository.MemberRepository;
 import com.video.repository.VideoRepository;
-import com.video.service.VideoService.VideoDTO;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +35,16 @@ public class CommentService {
 	public CommentDto writeComment(Map<String, String> commentInfo) {
 		Member writer = memberRepository.findById(Long.valueOf(commentInfo.get("writer"))).get();
 		Video video = videoRepository.findById(Long.valueOf(commentInfo.get("videoId"))).get();
-		Comment comment = Comment.builder().content(commentInfo.get("content")).writer(writer).video(video).build();
+		String content = commentInfo.get("content");
+		Comment comment = Comment.builder().content(content).writer(writer).video(video).build();
 		commentRepository.save(comment);
+
+		// 답글인 경우 추가
+		Long parentId = Long.valueOf(commentInfo.get("responseToId"));
+		if (parentId != null) {
+			Comment parent = commentRepository.findById(parentId).get();
+			parent.addChildComment(comment);
+		}
 		CommentDto commentDto = new CommentDto(comment);
 		return commentDto;
 	}

@@ -10,5 +10,6 @@ import com.video.domain.Video;
 public interface CommentRepository extends JpaRepository<Comment,Long>{
 
 	List<Comment> findByVideo(Video video);
+	Comment findByResponseTo(Comment comment);
 
 }

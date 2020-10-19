@@ -45,9 +45,6 @@ public class VideoService {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public List<VideoDTO> getAllVideo() {
 		List<VideoDTO> list = videoRepository.findAll().stream().map(VideoDTO::new).collect(Collectors.toList());
-		for (VideoDTO videoDTO : list) {
-			log.info(videoDTO.toString());
-		}
 		return list;
 	}
 

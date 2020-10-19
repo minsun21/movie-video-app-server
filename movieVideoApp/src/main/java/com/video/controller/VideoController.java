@@ -30,7 +30,6 @@ public class VideoController {
 	private final VideoService videoService;
 	
 	@ResponseBody
-	@SuppressWarnings({ "rawtypes" })
 	@GetMapping("/all")
 	public List<VideoDTO> getAllVideo() {
 		List<VideoDTO> list = videoService.getAllVideo();
