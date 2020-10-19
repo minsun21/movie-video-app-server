@@ -1,14 +1,18 @@
 package com.video.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.video.domain.Comment;
 import com.video.service.CommentService;
+import com.video.service.CommentService.CommentDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,17 +23,20 @@ public class CommentController {
 	private final CommentService commentService;
 	
 	@PostMapping("/get")
-	public List<Comment> allComment(Map<String, String> commentInfo){
+	public @ResponseBody List<CommentDto> allComment(@RequestBody Map<String, String> commentInfo){
 		// 해당 비디오의 코멘트들 전부 가져옴
 		Long videoId = Long.valueOf(commentInfo.get("videoId"));
-		List<Comment> commentList = commentService.allComment(videoId);
+		List<CommentDto> commentList = commentService.allComment(videoId);
 		return commentList;
 	}
 	
 	@PostMapping("/write")
-	public List<Comment> writeComment(Map<String, String> commentInfo){
+	public Map<String,Object> writeComment(@RequestBody Map<String, String> commentInfo){
+		Map<String,Object> result = new HashMap<String,Object>();
 		// 코멘트 작성하기
-		commentService.writeComment(commentInfo);
-		return null;
+		CommentDto comment = commentService.writeComment(commentInfo);
+		result.put("comment", comment);
+		result.put("result", "success");
+		return result;
 	}
 }
