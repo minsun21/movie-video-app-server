@@ -25,10 +25,11 @@ public class CommentService {
 	private final VideoRepository videoRepository;
 	private final MemberRepository memberRepository;
 
-	public List<CommentDto> allComment(Long videoId) {
+	public List<Comment> allComment(Long videoId) {
 		Video video = videoRepository.findById(videoId).get();
-		List<CommentDto> commentList = commentRepository.findByVideo(video).stream().map(CommentDto::new)
-				.collect(Collectors.toList());
+//		List<CommentDto> commentList = commentRepository.findByVideo(video).stream().map(CommentDto::new)
+//				.collect(Collectors.toList());
+		List<Comment> commentList = commentRepository.findByVideo(video);
 		return commentList;
 	}
 
@@ -40,8 +41,9 @@ public class CommentService {
 		commentRepository.save(comment);
 
 		// 답글인 경우 추가
-		Long parentId = Long.valueOf(commentInfo.get("responseToId"));
-		if (parentId != null) {
+		String responeId = commentInfo.get("responseToId");
+		if (responeId != null) {
+			Long parentId = Long.valueOf(responeId);
 			Comment parent = commentRepository.findById(parentId).get();
 			parent.addChildComment(comment);
 		}
@@ -54,15 +56,15 @@ public class CommentService {
 		private Long id;
 		private Member member;
 		private String content;
-		private Comment reponseTo;
-		private List<Comment> childList;
+//		private Comment reponseTo;
+//		private List<Comment> childList;
 
 		public CommentDto(Comment comment) {
 			this.id = comment.getId();
 			this.member = comment.getWriter();
 			this.content = comment.getContent();
-			this.reponseTo = comment.getResponseTo();
-			this.childList = comment.getChildList();
+//			this.reponseTo = comment.getResponseTo();
+//			this.childList = comment.getChildList();
 		}
 	}
 }
